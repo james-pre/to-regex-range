@@ -201,8 +201,7 @@ function countZeros(integer, zeros) {
   return integer - (integer % Math.pow(10, zeros));
 }
 
-function toQuantifier(digits) {
-  const [start = 0, stop = ''] = digits;
+function toQuantifier([start = 0, stop = '']) {
 
   return (stop || start > 1) ? `{${start + (stop ? ',' + stop : '')}}` : '';
 
