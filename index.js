@@ -115,7 +115,7 @@ function splitToRanges(min, max) {
   }
 
   stops = [...stops];
-  stops.sort(compare);
+  stops.sort((a, b) => a - b);
   return stops;
 }
 
@@ -219,10 +219,6 @@ function zip(a, b) {
   let arr = [];
   for (let i = 0; i < a.length; i++) arr.push([a[i], b[i]]);
   return arr;
-}
-
-function compare(a, b) {
-  return a > b ? 1 : b > a ? -1 : 0;
 }
 
 function contains(arr, key, val) {
