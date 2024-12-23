@@ -9,6 +9,8 @@
 
 const isNumber = (v) => (typeof v === "number" && v - v === 0) || (typeof v === "string" && Number.isFinite(+v) && v.trim() !== "");
 
+const paddingRegex = /^-?(0+)\d/;
+
 const toRegexRange = (min, max, options) => {
   if (isNumber(min) === false) {
     throw new TypeError('toRegexRange: expected the first argument to be a number');
@@ -41,17 +43,12 @@ const toRegexRange = (min, max, options) => {
   let b = Math.max(min, max);
 
   if (Math.abs(a - b) === 1) {
-    let result = min + '|' + max;
-    if (opts.capture) {
-      return `(${result})`;
-    }
-    if (opts.wrap === false) {
-      return result;
-    }
-    return `(?:${result})`;
+    const result = min + '|' + max;
+
+	return opts.capture ? `(${result})` : opts.wrap ? `(?:${result})` : result;
   }
 
-  let isPadded = hasPadding(min) || hasPadding(max);
+  let isPadded = paddingRegex.test(min) || paddingRegex.test(max);
   let state = { min, max, a, b };
   let positives = [];
   let negatives = [];
@@ -131,7 +128,9 @@ function rangeToPattern(start, stop, options) {
     return { pattern: start, count: [], digits: 0 };
   }
 
-  let zipped = zip(start, stop);
+  let zipped = [];
+  for (let i = 0; i < start.length; i++) zipped.push([start[i], stop[i]]);
+
   let digits = zipped.length;
   let pattern = '';
   let count = 0;
@@ -143,7 +142,7 @@ function rangeToPattern(start, stop, options) {
       pattern += startDigit;
 
     } else if (startDigit !== '0' || stopDigit !== '9') {
-      pattern += toCharacterClass(startDigit, stopDigit, options);
+      pattern += `[${startDigit}${(stopDigit - startDigit === 1) ? '' : '-'}${stopDigit}]`;
 
     } else {
       count++;
@@ -158,10 +157,10 @@ function rangeToPattern(start, stop, options) {
 }
 
 function splitToPatterns(min, max, tok, options) {
-  let ranges = splitToRanges(min, max);
-  let tokens = [];
-  let start = min;
-  let prev;
+  let ranges = splitToRanges(min, max),
+      tokens = [],
+      start = min,
+      prev;
 
   for (let i = 0; i < ranges.length; i++) {
     let max = ranges[i];
@@ -198,27 +197,19 @@ function filterPatterns(arr, comparison, prefix, intersection, options) {
   for (let ele of arr) {
     let { string } = ele;
 
+	const contained = contains(comparison, 'string', string);
+
     // only push if _both_ are negative...
-    if (!intersection && !contains(comparison, 'string', string)) {
+    if (!intersection && !contained) {
       result.push(prefix + string);
     }
 
     // or _both_ are positive
-    if (intersection && contains(comparison, 'string', string)) {
+    if (intersection && contained) {
       result.push(prefix + string);
     }
   }
   return result;
-}
-
-/**
- * Zip strings
- */
-
-function zip(a, b) {
-  let arr = [];
-  for (let i = 0; i < a.length; i++) arr.push([a[i], b[i]]);
-  return arr;
 }
 
 function contains(arr, key, val) {
@@ -235,18 +226,9 @@ function countZeros(integer, zeros) {
 
 function toQuantifier(digits) {
   let [start = 0, stop = ''] = digits;
-  if (stop || start > 1) {
-    return `{${start + (stop ? ',' + stop : '')}}`;
-  }
-  return '';
-}
 
-function toCharacterClass(a, b, options) {
-  return `[${a}${(b - a === 1) ? '' : '-'}${b}]`;
-}
+  return (stop || start > 1) ? `{${start + (stop ? ',' + stop : '')}}` : '';
 
-function hasPadding(str) {
-  return /^-?(0+)\d/.test(str);
 }
 
 function padZeros(value, tok, options) {
