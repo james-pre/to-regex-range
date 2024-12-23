@@ -178,29 +178,19 @@ function splitToPatterns(min, max, tok, options) {
   return tokens;
 }
 
-function filterPatterns(arr, comparison, prefix, intersection, options) {
+function filterPatterns(arr, comparison, prefix, intersection) {
   const result = [];
 
-  for (const ele of arr) {
-    const { string } = ele;
+  for (const { string } of arr) {
+	const contained = comparison.some(ele => ele.string === string);
 
-	const contained = contains(comparison, 'string', string);
-
-    // only push if _both_ are negative...
-    if (!intersection && !contained) {
+    // only push if _both_ are negative or positive
+    if (intersection === contained) {
       result.push(prefix + string);
     }
 
-    // or _both_ are positive
-    if (intersection && contained) {
-      result.push(prefix + string);
-    }
   }
   return result;
-}
-
-function contains(arr, key, val) {
-  return arr.some(ele => ele[key] === val);
 }
 
 function countNines(min, len) {
